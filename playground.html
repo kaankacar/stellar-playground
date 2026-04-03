@@ -9,16 +9,22 @@
   <script>var require = { paths: { vs: 'https://cdn.jsdelivr.net/npm/monaco-editor@0.45.0/min/vs' } };</script>
   <script src="https://cdn.jsdelivr.net/npm/monaco-editor@0.45.0/min/vs/loader.js"></script>
 
-  <!-- Stellar SDK loaded dynamically so we can handle load/error events -->
+  <!-- Stellar SDK loaded dynamically so we can handle load/error events.
+       IMPORTANT: Monaco installs an AMD define() before this runs. The SDK's UMD
+       bundle detects define and uses AMD mode — which never sets window.StellarSdk.
+       Fix: hide define while the SDK loads, then restore it for Monaco. -->
   <script>
     (function () {
       var PRIMARY = 'https://cdn.jsdelivr.net/npm/@stellar/stellar-sdk@15.0.1/dist/stellar-sdk.min.js'
       var FALLBACK = 'https://unpkg.com/@stellar/stellar-sdk@15.0.1/dist/stellar-sdk.min.js'
 
       function loadSdk(url, onError) {
+        var savedDefine = window.define
+        window.define = undefined          // hide AMD so UMD falls back to window.StellarSdk
         var s = document.createElement('script')
         s.src = url
-        s.onerror = onError
+        s.onload  = function () { window.define = savedDefine }
+        s.onerror = function () { window.define = savedDefine; onError() }
         document.head.appendChild(s)
       }
 
