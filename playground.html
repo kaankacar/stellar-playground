@@ -503,6 +503,18 @@ require(['vs/editor/editor.main'], function () {
     sendHeight()
   })
 
+  // Listen for secret key injection from parent StellarQuest page
+  // When user clicks Register, parent sends { type: 'stellar-quest-inject', secret: 'S...' }
+  // We replace SECRET_KEY_HERE in the editor with the real key automatically
+  window.addEventListener('message', (event) => {
+    if (!event.data || event.data.type !== 'stellar-quest-inject') return
+    const secret = event.data.secret
+    if (!secret || !editor) return
+    const current = editor.getValue()
+    const updated = current.replace(/'SECRET_KEY_HERE'/g, `'${secret}'`)
+    if (updated !== current) editor.setValue(updated)
+  })
+
   // Initial height signal to parent
   sendHeight()
 })

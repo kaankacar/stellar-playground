@@ -4,27 +4,59 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Create Account — Stellar Quest</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
+  <!-- Stellar SDK — for keypair generation in Register flow -->
+  <script src="https://cdn.jsdelivr.net/npm/@stellar/stellar-sdk@latest/dist/stellar-sdk.js"></script>
   <style>
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
-
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:        #090d1a;
+      --surface:   #0f1525;
+      --border:    #1a2040;
+      --cyan:      #00e5f0;
+      --teal:      #00f5c4;
+      --text:      #ffffff;
+      --muted:     rgba(255,255,255,0.55);
+      --code-bg:   #0d1120;
+      --code-pink: #ff79c6;
+      --code-cyan: #8be9fd;
+      --code-green:#50fa7b;
+      --code-gray: #6272a4;
+      --code-purple:#bd93f9;
+    }
 
     body {
       font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-      background: #090d1a;
-      color: #ffffff;
+      background: var(--bg);
+      color: var(--text);
       min-height: 100vh;
     }
 
-    /* ── Top nav ─────────────────────────────────────────── */
+    /* ── Demo banner ─────────────────────────────────────── */
+    .demo-banner {
+      background: #100e00;
+      border-bottom: 1px solid #2a2400;
+      padding: 7px 40px;
+      font-size: 12px;
+      color: #b8a040;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .demo-banner a { color: #e8c840; text-decoration: none; }
+    .demo-banner a:hover { text-decoration: underline; }
+
+    /* ── Nav ─────────────────────────────────────────────── */
     nav {
       display: flex;
       align-items: center;
       justify-content: space-between;
       padding: 0 40px;
       height: 60px;
-      background: #090d1a;
-      border-bottom: 1px solid #141929;
+      background: var(--bg);
+      border-bottom: 1px solid var(--border);
       position: sticky;
       top: 0;
       z-index: 100;
@@ -39,177 +71,75 @@
       font-weight: 800;
       letter-spacing: -0.5px;
     }
+    .nav-logo svg { margin-right: 8px; }
+    .nav-logo .s { color: #fff; }
+    .nav-logo .q { color: var(--cyan); }
 
-    .nav-logo .stellar { color: #ffffff; }
-    .nav-logo .quest   { color: #00e5f0; }
+    .nav-links { display: flex; gap: 32px; }
+    .nav-links a { color: #fff; text-decoration: none; font-size: 15px; font-weight: 500; opacity: 0.9; }
+    .nav-links a.active { color: var(--cyan); opacity: 1; }
 
-    .nav-logo svg {
-      margin-right: 8px;
-      flex-shrink: 0;
-    }
-
-    .nav-links {
-      display: flex;
-      align-items: center;
-      gap: 32px;
-    }
-
-    .nav-links a {
-      color: #ffffff;
-      text-decoration: none;
-      font-size: 15px;
-      font-weight: 500;
-      opacity: 0.9;
-    }
-
-    .nav-links a.active { color: #00e5f0; }
-
-    .nav-user {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      font-size: 14px;
-      font-weight: 600;
-      color: #ffffff;
-      cursor: pointer;
-    }
-
+    .nav-user { display: flex; align-items: center; gap: 10px; font-size: 14px; font-weight: 600; cursor: pointer; }
     .nav-avatar {
-      width: 34px;
-      height: 34px;
-      border-radius: 50%;
-      background: linear-gradient(135deg, #4c6ef5, #00e5f0);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 12px;
-      font-weight: 700;
+      width: 34px; height: 34px; border-radius: 50%;
+      background: linear-gradient(135deg, #4c6ef5, var(--cyan));
+      display: flex; align-items: center; justify-content: center;
+      font-size: 12px; font-weight: 700;
     }
 
-    /* ── Progress bar strip ──────────────────────────────── */
+    /* ── Progress strip ──────────────────────────────────── */
     .progress-strip {
       height: 36px;
-      background: #0c1020;
-      border-bottom: 1px solid #141929;
+      background: #0b0f1e;
+      border-bottom: 1px solid var(--border);
       display: flex;
       align-items: center;
       padding: 0 24px;
       gap: 20px;
       overflow-x: auto;
-      scrollbar-width: none;
     }
-
     .progress-strip::-webkit-scrollbar { display: none; }
 
-    .progress-section {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      flex-shrink: 0;
+    .prog-section { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
+    .prog-label {
+      font-size: 10px; font-weight: 700; text-transform: uppercase;
+      letter-spacing: 0.08em; color: #3a4a6b; margin-right: 4px;
     }
-
-    .progress-label {
-      font-size: 10px;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 0.08em;
-      color: #3a4a6b;
-      margin-right: 4px;
-    }
-
-    .progress-dot {
-      width: 14px;
-      height: 14px;
-      background: #1e2640;
-      border: 1px solid #2a3555;
-      cursor: pointer;
-      transition: background 0.15s;
+    .prog-dot {
+      width: 14px; height: 14px;
+      background: #1e2640; border: 1px solid #2a3555;
       image-rendering: pixelated;
     }
+    .prog-dot.done    { background: var(--cyan); border-color: var(--cyan); }
+    .prog-dot.current { background: #4c6ef5; border-color: #4c6ef5; box-shadow: 0 0 6px #4c6ef5; }
 
-    .progress-dot.done  { background: #00e5f0; border-color: #00e5f0; }
-    .progress-dot.current { background: #4c6ef5; border-color: #4c6ef5; box-shadow: 0 0 6px #4c6ef5; }
-
-    /* ── Hero section ────────────────────────────────────── */
+    /* ── Hero ────────────────────────────────────────────── */
     .hero {
       position: relative;
-      background: #090d1a;
-      padding: 56px 40px 48px;
+      padding: 56px 40px 44px;
       overflow: hidden;
-      min-height: 260px;
+      background: var(--bg);
     }
-
-    .hero-bg {
+    .hero::after {
+      content: '';
       position: absolute;
       inset: 0;
-      background:
-        radial-gradient(ellipse 60% 80% at 50% 120%, rgba(76,110,245,0.12) 0%, transparent 70%),
-        radial-gradient(ellipse 40% 60% at 90% 40%, rgba(0,229,240,0.05) 0%, transparent 60%);
+      background: radial-gradient(ellipse 70% 100% at 50% 130%, rgba(76,110,245,0.14) 0%, transparent 70%);
       pointer-events: none;
     }
 
-    /* pixel art decorations */
-    .pixel-astronaut {
-      position: absolute;
-      left: 40px;
-      bottom: 20px;
-      width: 80px;
-      height: 80px;
-      opacity: 0.7;
-      image-rendering: pixelated;
-    }
-
-    .pixel-planet {
-      position: absolute;
-      right: 60px;
-      top: 20px;
-      width: 130px;
-      height: 130px;
-      opacity: 0.6;
-    }
-
-    .hero-meta {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      margin-bottom: 16px;
-    }
-
-    .series-label {
-      font-size: 12px;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 0.1em;
-      color: #00e5f0;
-    }
-
-    .level-badge {
-      font-size: 11px;
-      font-weight: 800;
-      text-transform: uppercase;
-      letter-spacing: 0.08em;
-      color: #00e5f0;
-      border: 2px solid #00e5f0;
-      padding: 2px 10px;
-      background: transparent;
+    .hero-meta { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; }
+    .series-name { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; color: var(--cyan); }
+    .level-pill {
+      font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.08em;
+      color: var(--cyan); border: 2px solid var(--cyan); padding: 2px 10px;
     }
 
     .hero h1 {
-      font-size: 64px;
-      font-weight: 900;
-      line-height: 1;
-      letter-spacing: -2px;
-      color: #ffffff;
-      margin-bottom: 16px;
-      position: relative;
+      font-size: 64px; font-weight: 900; letter-spacing: -3px;
+      line-height: 1; color: #fff; margin-bottom: 14px; position: relative; z-index: 1;
     }
-
-    .hero-desc {
-      font-size: 18px;
-      color: rgba(255,255,255,0.7);
-      font-weight: 400;
-      position: relative;
-    }
+    .hero-sub { font-size: 18px; color: var(--muted); position: relative; z-index: 1; }
 
     /* ── Tab row ─────────────────────────────────────────── */
     .tab-row {
@@ -217,336 +147,216 @@
       align-items: center;
       gap: 0;
       padding: 20px 40px 0;
-      background: #090d1a;
+      background: var(--bg);
     }
-
-    .tab-label {
-      font-size: 13px;
-      color: rgba(255,255,255,0.5);
-      font-weight: 500;
-      margin-right: 20px;
-    }
+    .tab-hint { font-size: 13px; color: var(--muted); font-weight: 500; margin-right: 20px; }
 
     .tab-btn {
       padding: 10px 24px;
-      font-size: 12px;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 0.08em;
+      font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em;
       background: transparent;
       border: 1px solid #2a3555;
-      color: rgba(255,255,255,0.45);
+      color: rgba(255,255,255,0.4);
       cursor: pointer;
+      font-family: inherit;
       transition: all 0.15s;
     }
-
     .tab-btn:first-of-type { border-right: none; }
+    .tab-btn.active { border-color: var(--cyan); color: var(--cyan); }
 
-    .tab-btn.active {
-      border-color: #00e5f0;
-      color: #00e5f0;
-    }
-
-    /* ── Page body (two-column) ──────────────────────────── */
+    /* ── Page body ───────────────────────────────────────── */
     .page-body {
       display: grid;
-      grid-template-columns: 1fr 340px;
-      gap: 0;
+      grid-template-columns: 1fr 320px;
       align-items: start;
       padding: 0 40px;
-      max-width: 1400px;
     }
 
     /* ── Left: quest content ─────────────────────────────── */
     .quest-content {
-      padding: 36px 48px 36px 0;
-      border-right: 1px solid #141929;
+      padding: 36px 44px 60px 0;
+      border-right: 1px solid var(--border);
     }
 
     .quest-content p {
-      font-size: 15px;
-      line-height: 1.75;
-      color: rgba(255,255,255,0.82);
-      margin-bottom: 18px;
+      font-size: 15px; line-height: 1.75; color: rgba(255,255,255,0.82); margin-bottom: 18px;
     }
+    .quest-content p strong { color: #fff; font-weight: 700; }
 
-    .quest-content p strong {
-      color: #ffffff;
-      font-weight: 700;
+    .quest-content ol { padding-left: 22px; margin-bottom: 6px; }
+    .quest-content ol > li {
+      font-size: 15px; line-height: 1.75; color: rgba(255,255,255,0.82); margin-bottom: 14px;
     }
-
-    .quest-content ol {
-      padding-left: 20px;
-      margin-bottom: 20px;
-    }
-
-    .quest-content ol li {
-      font-size: 15px;
-      line-height: 1.75;
-      color: rgba(255,255,255,0.82);
-      margin-bottom: 12px;
-    }
-
-    .quest-content ul {
-      padding-left: 20px;
-      margin: 10px 0 16px;
-    }
-
+    .quest-content ul { padding-left: 20px; margin: 8px 0 14px; }
     .quest-content ul li {
-      font-size: 14px;
-      line-height: 1.7;
-      color: rgba(255,255,255,0.7);
-      margin-bottom: 6px;
-      list-style: disc;
+      font-size: 14px; line-height: 1.7; color: rgba(255,255,255,0.65);
+      list-style: disc; margin-bottom: 5px;
     }
 
     code {
-      font-family: 'Menlo', 'Monaco', 'Courier New', monospace;
-      font-size: 13px;
-      background: #131828;
-      color: #8be9fd;
-      padding: 2px 6px;
-      border-radius: 3px;
+      font-family: 'Menlo', 'Monaco', monospace;
+      font-size: 13px; background: #131828; color: var(--code-cyan);
+      padding: 2px 6px; border-radius: 3px;
     }
 
-    /* ── Code block ──────────────────────────────────────── */
+    /* ── Code blocks ─────────────────────────────────────── */
     .code-block {
-      background: #13182a;
-      border: 1px solid #1e2640;
-      border-radius: 0;
+      background: var(--code-bg);
+      border: 1px solid var(--border);
       padding: 20px 24px;
-      margin: 16px 0 24px;
+      margin: 14px 0 22px;
       position: relative;
-      font-family: 'Menlo', 'Monaco', 'Courier New', monospace;
+      font-family: 'Menlo', 'Monaco', monospace;
       font-size: 13px;
       line-height: 1.7;
       overflow-x: auto;
+      white-space: pre;
     }
-
-    .code-block .kw   { color: #ff79c6; }   /* keywords: const let new await */
-    .code-block .fn   { color: #50fa7b; }   /* function names */
-    .code-block .str  { color: #8be9fd; }   /* strings */
-    .code-block .cm   { color: #6272a4; font-style: italic; } /* comments */
-    .code-block .num  { color: #bd93f9; }   /* numbers */
-    .code-block .var  { color: #f8f8f2; }   /* variables */
-    .code-block .prop { color: #66d9e8; }   /* properties */
+    .code-block .kw   { color: var(--code-pink); }
+    .code-block .fn   { color: var(--code-green); }
+    .code-block .str  { color: var(--code-cyan); }
+    .code-block .cm   { color: var(--code-gray); font-style: italic; }
+    .code-block .num  { color: var(--code-purple); }
+    .code-block .prop { color: #66d9e8; }
 
     .copy-btn {
-      position: absolute;
-      top: 10px;
-      right: 12px;
-      background: #1e2640;
-      border: none;
-      color: rgba(255,255,255,0.5);
-      font-size: 11px;
-      padding: 4px 10px;
-      cursor: pointer;
-      border-radius: 3px;
-      font-family: inherit;
-      transition: color 0.15s, background 0.15s;
+      position: absolute; top: 10px; right: 12px;
+      background: #1e2640; border: none; color: var(--muted);
+      font-size: 11px; padding: 4px 10px; cursor: pointer;
+      border-radius: 3px; font-family: inherit; transition: all 0.15s;
     }
-
     .copy-btn:hover { background: #2a3555; color: #fff; }
 
-    /* ── RunKit replacement section ──────────────────────── */
-    .runkit-section {
-      margin-top: 32px;
-    }
+    /* ── Playground section ──────────────────────────────── */
+    .playground-section { margin-top: 32px; }
+    .playground-section > p { font-size: 15px; color: rgba(255,255,255,0.82); margin-bottom: 14px; }
+    .embed-wrapper { border: 1px solid var(--border); }
 
-    .runkit-section p {
-      font-size: 15px;
-      color: rgba(255,255,255,0.82);
-      margin-bottom: 16px;
-    }
-
-    .embed-wrapper {
-      border: 1px solid #1e2640;
-    }
-
-    /* ── Right sidebar ───────────────────────────────────── */
+    /* ── Right: sidebar ──────────────────────────────────── */
     .sidebar {
-      padding: 36px 0 36px 36px;
+      padding: 36px 0 36px 32px;
       position: sticky;
       top: 96px;
     }
 
-    .sidebar-card {
-      background: #0f1525;
-      border: 1px solid #1e2640;
-      padding: 28px 24px;
-      text-align: center;
+    /* common card styles */
+    .sq-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      padding: 24px 20px;
     }
 
-    .quest-nft {
-      width: 90px;
-      height: 90px;
+    /* ── State: INITIAL ──────────────────────────────────── */
+    #card-initial .nft-placeholder {
+      width: 80px; height: 80px;
+      background: #1a2035; border: 2px solid var(--border);
       margin: 0 auto 16px;
-      border: 2px solid #1e2640;
-      background: #1a2035;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 36px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 32px; filter: grayscale(1) opacity(0.4);
+    }
+    #card-initial h3 { font-size: 17px; font-weight: 800; color: #fff; margin-bottom: 8px; text-align: center; }
+    #card-initial p  { font-size: 13px; color: var(--muted); line-height: 1.6; text-align: center; margin-bottom: 20px; }
+
+    /* ── State: ACTIVE ───────────────────────────────────── */
+    .kp-header {
+      font-size: 10px; font-weight: 700; text-transform: uppercase;
+      letter-spacing: 0.08em; color: #3a4a6b; margin-bottom: 14px;
     }
 
-    .sidebar-card h3 {
-      font-size: 20px;
-      font-weight: 800;
-      color: #00e5f0;
-      margin-bottom: 10px;
-      letter-spacing: -0.5px;
+    .key-group { margin-bottom: 14px; }
+    .key-label {
+      font-size: 10px; font-weight: 600; text-transform: uppercase;
+      letter-spacing: 0.07em; color: #3a4a6b; margin-bottom: 6px;
     }
-
-    .sidebar-card p {
-      font-size: 13px;
-      color: rgba(255,255,255,0.55);
-      line-height: 1.6;
-      margin-bottom: 20px;
+    .key-row {
+      display: flex; align-items: center; gap: 8px;
+      background: #0c1020; border: 1px solid var(--border);
+      padding: 8px 10px;
     }
+    .key-val {
+      font-family: 'Menlo', monospace; font-size: 10px; color: var(--cyan);
+      word-break: break-all; flex: 1; line-height: 1.5;
+    }
+    .key-val.secret { color: rgba(255,255,255,0.4); letter-spacing: 0.05em; }
+    .key-copy {
+      background: none; border: 1px solid #2a3555; color: var(--muted);
+      font-size: 10px; font-weight: 600; padding: 3px 8px;
+      cursor: pointer; font-family: inherit; white-space: nowrap;
+      transition: all 0.15s; flex-shrink: 0;
+    }
+    .key-copy:hover { border-color: var(--cyan); color: var(--cyan); }
+    .key-copy.copied { border-color: var(--teal); color: var(--teal); }
 
+    .divider { border: none; border-top: 1px solid var(--border); margin: 18px 0; }
+
+    .fund-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+    .fund-label { font-size: 11px; color: var(--muted); }
+
+    .btn-fund {
+      display: inline-flex; align-items: center; gap: 6px;
+      background: transparent; border: 1px solid #2a3555;
+      color: rgba(255,255,255,0.65); font-size: 11px; font-weight: 600;
+      padding: 6px 14px; cursor: pointer; font-family: inherit;
+      transition: all 0.15s;
+    }
+    .btn-fund:hover { border-color: var(--cyan); color: var(--cyan); }
+    .btn-fund:disabled { opacity: 0.4; cursor: not-allowed; }
+    .btn-fund.funded { border-color: var(--teal); color: var(--teal); cursor: default; }
+
+    /* ── State: SUCCESS ──────────────────────────────────── */
+    #card-success .nft-success {
+      width: 90px; height: 90px;
+      background: linear-gradient(135deg, #0f2a1f, #1a3a2a);
+      border: 2px solid var(--teal);
+      margin: 0 auto 16px;
+      display: flex; align-items: center; justify-content: center; font-size: 36px;
+    }
+    #card-success h3 { font-size: 22px; font-weight: 900; color: var(--teal); margin-bottom: 8px; text-align: center; letter-spacing: -0.5px; }
+    #card-success p  { font-size: 13px; color: var(--muted); line-height: 1.6; text-align: center; margin-bottom: 20px; }
+
+    /* ── Shared buttons ──────────────────────────────────── */
     .btn-primary {
-      display: block;
-      width: 100%;
-      padding: 14px;
-      background: #00f5c4;
-      color: #000000;
-      font-size: 13px;
-      font-weight: 800;
-      text-transform: uppercase;
-      letter-spacing: 0.1em;
-      border: none;
-      cursor: pointer;
-      text-align: center;
-      text-decoration: none;
-      transition: background 0.15s;
+      display: block; width: 100%; padding: 13px;
+      background: var(--teal); color: #000;
+      font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.1em;
+      border: none; cursor: pointer; font-family: inherit; transition: background 0.15s;
     }
-
     .btn-primary:hover { background: #00ddb0; }
+    .btn-primary:disabled { background: #1a2035; color: #3a4a6b; cursor: not-allowed; }
 
     .btn-outline {
-      display: block;
-      width: 100%;
-      padding: 11px;
-      background: transparent;
-      color: rgba(255,255,255,0.6);
-      font-size: 12px;
-      font-weight: 600;
-      text-transform: uppercase;
-      letter-spacing: 0.08em;
-      border: 1px solid #2a3555;
-      cursor: pointer;
-      text-align: center;
-      margin-top: 10px;
-      transition: border-color 0.15s, color 0.15s;
+      display: block; width: 100%; padding: 11px;
+      background: transparent; color: var(--muted);
+      font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em;
+      border: 1px solid #2a3555; cursor: pointer; font-family: inherit;
+      text-align: center; text-decoration: none; margin-top: 10px; transition: all 0.15s;
     }
-
-    .btn-outline:hover { border-color: #00e5f0; color: #00e5f0; }
-
-    /* keypair box */
-    .keypair-box {
-      background: #0c1020;
-      border: 1px solid #1e2640;
-      padding: 14px 16px;
-      margin-bottom: 16px;
-      text-align: left;
-    }
-
-    .keypair-label {
-      font-size: 10px;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 0.08em;
-      color: #3a4a6b;
-      margin-bottom: 8px;
-    }
-
-    .keypair-key {
-      font-family: 'Menlo', monospace;
-      font-size: 10px;
-      color: #00e5f0;
-      word-break: break-all;
-      line-height: 1.5;
-    }
-
-    .fund-btn {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      margin-top: 10px;
-      background: #1e2640;
-      border: 1px solid #2a3555;
-      color: rgba(255,255,255,0.7);
-      font-size: 11px;
-      font-weight: 600;
-      padding: 5px 12px;
-      cursor: pointer;
-      transition: border-color 0.15s;
-    }
-
-    .fund-btn:hover { border-color: #00e5f0; color: #00e5f0; }
-
-    /* ── Demo banner ─────────────────────────────────────── */
-    .demo-banner {
-      background: #1a1200;
-      border-bottom: 1px solid #3a2800;
-      padding: 8px 40px;
-      font-size: 12px;
-      color: #c8a840;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-    }
-
-    .demo-banner a { color: #f0cc60; text-decoration: none; }
-    .demo-banner a:hover { text-decoration: underline; }
+    .btn-outline:hover { border-color: var(--cyan); color: var(--cyan); }
 
     /* ── Footer ──────────────────────────────────────────── */
     footer {
-      padding: 40px;
-      border-top: 1px solid #141929;
-      margin-top: 40px;
+      padding: 40px; border-top: 1px solid var(--border); margin-top: 40px;
     }
-
-    .footer-cta {
-      font-size: 18px;
-      font-weight: 700;
-      color: #ffffff;
-      margin-bottom: 8px;
-    }
-
-    .footer-sub {
-      font-size: 14px;
-      color: rgba(255,255,255,0.45);
-      margin-bottom: 20px;
-    }
-
-    .footer-links {
-      display: flex;
-      gap: 20px;
-    }
-
-    .footer-links a {
-      font-size: 13px;
-      color: #00e5f0;
-      text-decoration: none;
-    }
+    .footer-cta { font-size: 18px; font-weight: 700; margin-bottom: 8px; }
+    .footer-sub { font-size: 14px; color: var(--muted); margin-bottom: 20px; }
+    .footer-links { display: flex; gap: 20px; }
+    .footer-links a { font-size: 13px; color: var(--cyan); text-decoration: none; }
   </style>
 </head>
 <body>
 
 <div class="demo-banner">
-  <span>Demo — showing Stellar Playground embedded where RunKit used to be.</span>
+  <span>Demo — Stellar Playground replacing RunKit in a real quest page.</span>
   <a href="playground.html" target="_blank">Open playground standalone ↗</a>
 </div>
 
-<!-- Nav -->
 <nav>
   <a class="nav-logo" href="#">
-    <svg width="26" height="26" viewBox="0 0 24 24" fill="none">
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
       <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"
             stroke="#00e5f0" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
     </svg>
-    <span class="stellar">Stellar</span><span class="quest">Quest</span>
+    <span class="s">Stellar</span><span class="q">Quest</span>
   </a>
   <div class="nav-links">
     <a href="#">Home</a>
@@ -560,66 +370,51 @@
   </div>
 </nav>
 
-<!-- Progress strip -->
 <div class="progress-strip">
-  <div class="progress-section">
-    <span class="progress-label">Mini Quest</span>
-    <div class="progress-dot done"></div>
+  <div class="prog-section">
+    <span class="prog-label">Mini Quest</span>
+    <div class="prog-dot done"></div>
   </div>
-  <div class="progress-section">
-    <span class="progress-label">Level 1</span>
-    <div class="progress-dot done"></div>
-    <div class="progress-dot current"></div>
-    <div class="progress-dot"></div>
-    <div class="progress-dot"></div>
-    <div class="progress-dot"></div>
+  <div class="prog-section">
+    <span class="prog-label">Level 1</span>
+    <div class="prog-dot done"></div>
+    <div class="prog-dot current"></div>
+    <div class="prog-dot"></div>
+    <div class="prog-dot"></div>
+    <div class="prog-dot"></div>
   </div>
-  <div class="progress-section">
-    <span class="progress-label">Level 2</span>
-    <div class="progress-dot"></div>
-    <div class="progress-dot"></div>
-    <div class="progress-dot"></div>
-    <div class="progress-dot"></div>
-    <div class="progress-dot"></div>
+  <div class="prog-section">
+    <span class="prog-label">Level 2</span>
+    <div class="prog-dot"></div><div class="prog-dot"></div><div class="prog-dot"></div><div class="prog-dot"></div><div class="prog-dot"></div>
   </div>
-  <div class="progress-section">
-    <span class="progress-label">Level 3</span>
-    <div class="progress-dot"></div>
-    <div class="progress-dot"></div>
-    <div class="progress-dot"></div>
-    <div class="progress-dot"></div>
-    <div class="progress-dot"></div>
+  <div class="prog-section">
+    <span class="prog-label">Level 3</span>
+    <div class="prog-dot"></div><div class="prog-dot"></div><div class="prog-dot"></div><div class="prog-dot"></div><div class="prog-dot"></div>
   </div>
-  <div class="progress-section">
-    <span class="progress-label">Side Quests</span>
-    <div class="progress-dot"></div>
-    <div class="progress-dot"></div>
-    <div class="progress-dot"></div>
+  <div class="prog-section">
+    <span class="prog-label">Side Quests</span>
+    <div class="prog-dot"></div><div class="prog-dot"></div><div class="prog-dot"></div>
   </div>
 </div>
 
-<!-- Hero -->
 <div class="hero">
-  <div class="hero-bg"></div>
   <div class="hero-meta">
-    <span class="series-label">Payment Operations</span>
-    <span class="level-badge">Level 01</span>
+    <span class="series-name">Payment Operations</span>
+    <span class="level-pill">Level 01</span>
   </div>
   <h1>Create Account</h1>
-  <p class="hero-desc">Create an account on the Stellar network</p>
+  <p class="hero-sub">Create an account on the Stellar network</p>
 </div>
 
-<!-- Tab row -->
 <div class="tab-row">
-  <span class="tab-label">Choose your way to play...</span>
+  <span class="tab-hint">Choose your way to play...</span>
   <button class="tab-btn">STELLAR LAB</button>
   <button class="tab-btn active">MANUAL CODE</button>
 </div>
 
-<!-- Main two-column layout -->
 <div class="page-body">
 
-  <!-- Left: quest content -->
+  <!-- Left: content -->
   <div class="quest-content">
 
     <p>If Stellar were a universe, and it is, accounts would be the planets, stars, moons, and asteroids within that fertile space.</p>
@@ -628,103 +423,81 @@
     <p>Let's get started!</p>
 
     <ol>
-      <li>Start by clicking the <strong>Fund</strong> button next to the Quest Keypair in the box on the right-hand side of the quest screen.</li>
-    </ol>
+      <li>
+        Start by clicking <strong>Register</strong> in the box on the right to receive your unique Quest Keypair, then click <strong>Fund</strong> to add testnet XLM to it.
+      </li>
 
-    <p>Every quest in Stellar Quest Learn will have a different Quest Account (also called the Quest Keypair) that plays an important role in the quest. The Fund button funds the keypair with 10,000 fake XLM from Stellar's testnet faucet named friendbot.</p>
-
-    <ol start="2">
       <li>To begin, we're going to need a few things from the <code>stellar-sdk</code>.</li>
     </ol>
 
-    <div class="code-block">
-      <button class="copy-btn">Copy</button>
-<span class="kw">const</span> {
-  <span class="var">Keypair</span>, <span class="var">Server</span>, <span class="var">TransactionBuilder</span>,
-  <span class="var">Networks</span>, <span class="var">Operation</span>, <span class="var">BASE_FEE</span>
-} = <span class="fn">require</span>(<span class="str">'stellar-sdk'</span>)
-    </div>
+    <div class="code-block"><button class="copy-btn">Copy</button><span class="kw">const</span> {
+  Keypair, Server, TransactionBuilder,
+  Networks, Operation, BASE_FEE
+} = <span class="fn">require</span>(<span class="str">'stellar-sdk'</span>)</div>
 
     <ol start="3">
-      <li>Then, we'll get our two keypairs sorted out. One will be for your quest account, and the other will be the new account we're creating.</li>
+      <li>Get your two keypairs ready — one for the Quest Account (from the sidebar), one for the new account you're creating.</li>
     </ol>
 
-    <div class="code-block">
-      <button class="copy-btn">Copy</button>
-<span class="kw">const</span> <span class="var">questKeypair</span> = <span class="var">Keypair</span>.<span class="fn">fromSecret</span>(<span class="str">'SECRET_KEY_HERE'</span>)
-<span class="kw">const</span> <span class="var">newKeypair</span> = <span class="var">Keypair</span>.<span class="fn">random</span>()
-    </div>
+    <div class="code-block"><button class="copy-btn">Copy</button><span class="kw">const</span> questKeypair = Keypair.<span class="fn">fromSecret</span>(<span class="str">'SECRET_KEY_HERE'</span>)
+<span class="kw">const</span> newKeypair = Keypair.<span class="fn">random</span>()</div>
 
     <ol start="4">
       <li>
-        Next, we'll get a couple things ready for the transaction we'll be building:
+        Set up a <code>server</code> and load the Quest Account from Horizon:
         <ul>
-          <li>A <code>server</code> that can be used to retrieve and submit information to the network.</li>
-          <li>The <code>account</code> associated with your quest keypair.</li>
+          <li>A <code>server</code> to retrieve and submit information to the network.</li>
+          <li>The <code>account</code> associated with your Quest Keypair.</li>
         </ul>
       </li>
     </ol>
 
-    <div class="code-block">
-      <button class="copy-btn">Copy</button>
-<span class="cm">// You would need to remove the '-testnet' here, if you were using the Stellar Public network.</span>
-<span class="kw">const</span> <span class="var">server</span> = <span class="kw">new</span> <span class="fn">Server</span>(<span class="str">'https://horizon-testnet.stellar.org'</span>)
-<span class="kw">const</span> <span class="var">questAccount</span> = <span class="kw">await</span> <span class="var">server</span>.<span class="fn">loadAccount</span>(<span class="var">questKeypair</span>.<span class="fn">publicKey</span>())
-    </div>
+    <div class="code-block"><button class="copy-btn">Copy</button><span class="cm">// Remove '-testnet' when using the public network.</span>
+<span class="kw">const</span> server = <span class="kw">new</span> <span class="fn">Server</span>(<span class="str">'https://horizon-testnet.stellar.org'</span>)
+<span class="kw">const</span> questAccount = <span class="kw">await</span> server.<span class="fn">loadAccount</span>(questKeypair.<span class="fn">publicKey</span>())</div>
 
     <ol start="5">
-      <li>Now we're ready to build the transaction using <code>TransactionBuilder</code>.</li>
+      <li>Build the transaction using <code>TransactionBuilder</code>.</li>
     </ol>
 
-    <div class="code-block">
-      <button class="copy-btn">Copy</button>
-<span class="kw">let</span> <span class="var">transaction</span> = <span class="kw">new</span> <span class="fn">TransactionBuilder</span>(<span class="var">questAccount</span>, {
-  <span class="prop">fee</span>: <span class="var">BASE_FEE</span>,
-  <span class="prop">networkPassphrase</span>: <span class="var">Networks</span>.<span class="prop">TESTNET</span>
-})
-    </div>
+    <div class="code-block"><button class="copy-btn">Copy</button><span class="kw">let</span> transaction = <span class="kw">new</span> <span class="fn">TransactionBuilder</span>(questAccount, {
+  <span class="prop">fee</span>: BASE_FEE,
+  <span class="prop">networkPassphrase</span>: Networks.<span class="prop">TESTNET</span>
+})</div>
 
     <ol start="6">
-      <li>Add the <code>createAccount</code> operation to the transaction.</li>
+      <li>Add the <code>createAccount</code> operation and sign.</li>
     </ol>
 
-    <div class="code-block">
-      <button class="copy-btn">Copy</button>
-<span class="var">transaction</span> = <span class="var">transaction</span>
-  .<span class="fn">addOperation</span>(<span class="var">Operation</span>.<span class="fn">createAccount</span>({
-    <span class="prop">destination</span>: <span class="var">newKeypair</span>.<span class="fn">publicKey</span>(),
+    <div class="code-block"><button class="copy-btn">Copy</button>transaction = transaction
+  .<span class="fn">addOperation</span>(Operation.<span class="fn">createAccount</span>({
+    <span class="prop">destination</span>: newKeypair.<span class="fn">publicKey</span>(),
     <span class="prop">startingBalance</span>: <span class="str">"1000"</span>
   }))
   .<span class="fn">setTimeout</span>(<span class="num">30</span>)
   .<span class="fn">build</span>()
 
-<span class="var">transaction</span>.<span class="fn">sign</span>(<span class="var">questKeypair</span>)
-    </div>
+transaction.<span class="fn">sign</span>(questKeypair)</div>
 
     <ol start="7">
-      <li>Finally, submit the transaction to the network.</li>
+      <li>Submit to the network.</li>
     </ol>
 
-    <div class="code-block">
-      <button class="copy-btn">Copy</button>
-<span class="kw">try</span> {
-  <span class="kw">let</span> <span class="var">res</span> = <span class="kw">await</span> <span class="var">server</span>.<span class="fn">submitTransaction</span>(<span class="var">transaction</span>)
-  <span class="var">console</span>.<span class="fn">log</span>(<span class="str">`Transaction Successful! Hash: <span class="var">${res.hash}</span>`</span>)
-} <span class="kw">catch</span> (<span class="var">error</span>) {
-  <span class="var">console</span>.<span class="fn">log</span>(<span class="var">error</span>, <span class="str">`. More details:\n`</span>, <span class="var">JSON</span>.<span class="fn">stringify</span>(<span class="var">error</span>.<span class="prop">response</span>.<span class="prop">data</span>.<span class="prop">extras</span>, <span class="kw">null</span>, <span class="num">2</span>))
-}
-    </div>
+    <div class="code-block"><button class="copy-btn">Copy</button><span class="kw">try</span> {
+  <span class="kw">let</span> res = <span class="kw">await</span> server.<span class="fn">submitTransaction</span>(transaction)
+  console.<span class="fn">log</span>(<span class="str">`Transaction Successful! Hash: <span class="prop">${res.hash}</span>`</span>)
+} <span class="kw">catch</span> (error) {
+  console.<span class="fn">log</span>(error, <span class="str">`. More details:\n`</span>,
+    JSON.<span class="fn">stringify</span>(error.<span class="prop">response</span>.<span class="prop">data</span>.<span class="prop">extras</span>, <span class="kw">null</span>, <span class="num">2</span>))
+}</div>
 
-    <p>Assuming everything went well, you can click the button on the right to see if you passed, and collect your first fresh Stellar Quest NFT badge.</p>
+    <p>Assuming everything went well, you can click <strong>Verify</strong> on the right to see if you passed and collect your Stellar Quest NFT badge.</p>
 
-    <!-- ── Playground (replaces RunKit) ── -->
-    <div class="runkit-section">
+    <!-- Playground (replaces RunKit) -->
+    <div class="playground-section">
       <p>Use the script below to complete this quest:</p>
       <div class="embed-wrapper">
-        <div class="stellar-embed"
-             data-code="Y29uc3QgeyBLZXlwYWlyLCBIb3Jpem9uIH0gPSByZXF1aXJlKCJAc3RlbGxhci9zdGVsbGFyLXNkayIpCgovLyBHZW5lcmF0ZSBhIG5ldyBrZXlwYWlyIGZvciB5b3VyIFN0ZWxsYXIgYWNjb3VudApjb25zdCBrZXlwYWlyID0gS2V5cGFpci5yYW5kb20oKQpjb25zb2xlLmxvZygiUHVibGljIEtleSA6Iiwga2V5cGFpci5wdWJsaWNLZXkoKSkKY29uc29sZS5sb2coIlNlY3JldCBLZXkgOiIsIGtleXBhaXIuc2VjcmV0KCkpCgovLyBGdW5kIHRoZSBhY2NvdW50IHVzaW5nIEZyaWVuZGJvdCAodGVzdG5ldCBmYXVjZXQpCmNvbnN0IHJlc3AgPSBhd2FpdCBmZXRjaCgKICAiaHR0cHM6Ly9mcmllbmRib3Quc3RlbGxhci5vcmc/YWRkcj0iICsgZW5jb2RlVVJJQ29tcG9uZW50KGtleXBhaXIucHVibGljS2V5KCkpCikKY29uc3QgcmVzdWx0ID0gYXdhaXQgcmVzcC5qc29uKCkKY29uc29sZS5sb2coIkZ1bmRlZCAgICAgIDoiLCByZXN1bHQuc3VjY2Vzc2Z1bCAhPT0gZmFsc2UgPyAieWVzIiA6ICJmYWlsZWQiKQoKLy8gQ29uZmlybSB0aGUgYWNjb3VudCBleGlzdHMgb24gSG9yaXpvbgpjb25zdCBzZXJ2ZXIgPSBuZXcgSG9yaXpvbi5TZXJ2ZXIoImh0dHBzOi8vaG9yaXpvbi10ZXN0bmV0LnN0ZWxsYXIub3JnIikKY29uc3QgYWNjb3VudCA9IGF3YWl0IHNlcnZlci5sb2FkQWNjb3VudChrZXlwYWlyLnB1YmxpY0tleSgpKQoKYWNjb3VudC5iYWxhbmNlcy5mb3JFYWNoKGIgPT4gewogIGNvbnN0IGFzc2V0ID0gYi5hc3NldF90eXBlID09PSAibmF0aXZlIiA/ICJYTE0iIDogYi5hc3NldF9jb2RlCiAgY29uc29sZS5sb2coIkJhbGFuY2UgICAgIDoiLCBiLmJhbGFuY2UsIGFzc2V0KQp9KQoKY29uc29sZS5sb2coIiIpCmNvbnNvbGUubG9nKCJRdWVzdCBjb21wbGV0ZSEgQ29weSB5b3VyIFB1YmxpYyBLZXkgYWJvdmUiKQpjb25zb2xlLmxvZygiYW5kIHBhc3RlIGl0IGludG8gU3RlbGxhclF1ZXN0IHRvIHZlcmlmeS4iKQ=="
-             data-height="500">
-        </div>
+        <div id="playground-embed" class="stellar-embed" data-height="500"></div>
       </div>
     </div>
 
@@ -732,22 +505,56 @@
 
   <!-- Right: sidebar -->
   <div class="sidebar">
-    <div class="sidebar-card">
-      <div class="quest-nft">🚀</div>
-      <h3>Check Answer</h3>
-      <p>Once you've run the script and created your account, click below to verify and collect your badge.</p>
 
-      <div class="keypair-box">
-        <div class="keypair-label">Quest Keypair — Public Key</div>
-        <div class="keypair-key">Gdemo...XXXX (generated per session)</div>
-        <button class="fund-btn">⚡ Fund</button>
+    <!-- State: INITIAL -->
+    <div id="card-initial" class="sq-card">
+      <div class="nft-placeholder">🚀</div>
+      <h3>Ready to start?</h3>
+      <p>Register to receive your unique Quest Keypair for this session.</p>
+      <button id="register-btn" class="btn-primary">REGISTER</button>
+    </div>
+
+    <!-- State: ACTIVE (keypair shown, fund + verify) -->
+    <div id="card-active" class="sq-card" style="display:none">
+      <div class="kp-header">Quest Keypair</div>
+
+      <div class="key-group">
+        <div class="key-label">Public Key</div>
+        <div class="key-row">
+          <div class="key-val" id="display-pk">—</div>
+          <button class="key-copy" data-target="pk">Copy</button>
+        </div>
       </div>
 
-      <button class="btn-primary">CHECK ANSWER</button>
-      <button class="btn-outline">VIEW ON STELLAR EXPERT</button>
-    </div>
-  </div>
+      <div class="key-group">
+        <div class="key-label">Secret Key</div>
+        <div class="key-row">
+          <div class="key-val secret" id="display-sk">—</div>
+          <button class="key-copy" data-target="sk">Copy</button>
+        </div>
+      </div>
 
+      <div class="divider"></div>
+
+      <div class="fund-row">
+        <span class="fund-label">Fund with testnet XLM</span>
+        <button id="fund-btn" class="btn-fund">⚡ Fund</button>
+      </div>
+
+      <button id="verify-btn" class="btn-primary" disabled>VERIFY</button>
+      <a id="expert-link" href="#" target="_blank" class="btn-outline">VIEW ON STELLAR EXPERT ↗</a>
+    </div>
+
+    <!-- State: SUCCESS -->
+    <div id="card-success" class="sq-card" style="display:none">
+      <div class="nft-success">🚀</div>
+      <h3>Success!</h3>
+      <p>It's all yours! Go tell the world or see how it looks in your profile.</p>
+      <a href="#" class="btn-primary" style="text-decoration:none;display:block;text-align:center;">VIEW ON PROFILE →</a>
+      <button id="replay-btn" class="btn-outline" style="margin-top:10px">REPLAY</button>
+    </div>
+
+  </div>
 </div>
 
 <footer>
@@ -761,19 +568,175 @@
   </div>
 </footer>
 
-<script src="embed.js"></script>
 <script>
-  // Copy buttons
-  document.querySelectorAll('.copy-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-      const code = btn.parentElement.innerText.replace('Copy', '').trim()
-      navigator.clipboard.writeText(code).then(() => {
-        btn.textContent = 'Copied!'
-        setTimeout(() => btn.textContent = 'Copy', 1500)
-      })
+// ── Quest code template (SECRET_KEY_HERE gets replaced on Register) ───────
+const QUEST_CODE =
+`const { Keypair, Horizon, TransactionBuilder, Networks, Operation, BASE_FEE } = require('@stellar/stellar-sdk')
+
+// Quest Keypair — your unique key for this quest (injected from sidebar)
+const questKeypair = Keypair.fromSecret('SECRET_KEY_HERE')
+
+// Generate a new random account to create
+const newKeypair = Keypair.random()
+console.log('New Public Key:', newKeypair.publicKey())
+console.log('New Secret Key:', newKeypair.secret())
+
+// Connect to Horizon testnet
+const server = new Horizon.Server('https://horizon-testnet.stellar.org')
+const questAccount = await server.loadAccount(questKeypair.publicKey())
+
+// Build the createAccount transaction
+let transaction = new TransactionBuilder(questAccount, {
+  fee: BASE_FEE,
+  networkPassphrase: Networks.TESTNET
+})
+  .addOperation(Operation.createAccount({
+    destination: newKeypair.publicKey(),
+    startingBalance: '1000'
+  }))
+  .setTimeout(30)
+  .build()
+
+transaction.sign(questKeypair)
+
+// Submit to testnet
+try {
+  const res = await server.submitTransaction(transaction)
+  console.log('Quest complete! Transaction hash:', res.hash)
+} catch (err) {
+  console.log('Error:', err.message)
+  if (err.response?.data?.extras) {
+    console.log('Details:', JSON.stringify(err.response.data.extras, null, 2))
+  }
+}`
+
+// ── Set quest code on the embed div before embed.js runs ─────────────────
+document.getElementById('playground-embed').dataset.code = btoa(unescape(encodeURIComponent(QUEST_CODE)))
+
+// ── State ─────────────────────────────────────────────────────────────────
+let questKeypair = null
+
+function getPlaygroundIframe() {
+  return document.querySelector('.embed-wrapper iframe')
+}
+
+function injectSecretIntoPlayground(secret) {
+  const iframe = getPlaygroundIframe()
+  if (iframe) {
+    iframe.contentWindow.postMessage({ type: 'stellar-quest-inject', secret }, '*')
+  }
+}
+
+// ── Register ──────────────────────────────────────────────────────────────
+document.getElementById('register-btn').addEventListener('click', () => {
+  // Wait for SDK to be available
+  if (typeof window.StellarSdk === 'undefined') {
+    alert('Stellar SDK still loading, try again in a moment.')
+    return
+  }
+
+  // Generate a deterministic-looking keypair (simulates server-generated)
+  questKeypair = window.StellarSdk.Keypair.random()
+  const pk = questKeypair.publicKey()
+  const sk = questKeypair.secret()
+
+  // Show truncated keys
+  document.getElementById('display-pk').textContent = pk.slice(0, 12) + '…' + pk.slice(-4)
+  document.getElementById('display-sk').textContent = sk.slice(0, 12) + '…' + sk.slice(-4)
+  document.getElementById('display-pk').dataset.full = pk
+  document.getElementById('display-sk').dataset.full = sk
+
+  // Update stellar.expert link
+  document.getElementById('expert-link').href =
+    `https://stellar.expert/explorer/testnet/account/${pk}`
+
+  // Swap cards
+  document.getElementById('card-initial').style.display = 'none'
+  document.getElementById('card-active').style.display = 'block'
+
+  // Inject secret into playground (with a small delay for iframe to load)
+  setTimeout(() => injectSecretIntoPlayground(sk), 1500)
+})
+
+// ── Copy key buttons ───────────────────────────────────────────────────────
+document.querySelectorAll('.key-copy').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const target = btn.dataset.target
+    const el = document.getElementById(`display-${target}`)
+    const val = el.dataset.full || el.textContent
+    navigator.clipboard.writeText(val).then(() => {
+      btn.textContent = 'Copied!'
+      btn.classList.add('copied')
+      setTimeout(() => { btn.textContent = 'Copy'; btn.classList.remove('copied') }, 1500)
     })
   })
+})
+
+// ── Fund ──────────────────────────────────────────────────────────────────
+document.getElementById('fund-btn').addEventListener('click', async () => {
+  if (!questKeypair) return
+  const btn = document.getElementById('fund-btn')
+  btn.textContent = 'Funding…'
+  btn.disabled = true
+
+  try {
+    const resp = await fetch(
+      `https://friendbot.stellar.org?addr=${encodeURIComponent(questKeypair.publicKey())}`
+    )
+    if (resp.ok || resp.status === 400) { // 400 = already funded
+      btn.textContent = '✓ Funded'
+      btn.classList.add('funded')
+      document.getElementById('verify-btn').disabled = false
+    } else {
+      btn.textContent = '✗ Failed — retry'
+      btn.disabled = false
+    }
+  } catch {
+    btn.textContent = '✗ Failed — retry'
+    btn.disabled = false
+  }
+})
+
+// ── Verify (simulated) ────────────────────────────────────────────────────
+document.getElementById('verify-btn').addEventListener('click', () => {
+  const btn = document.getElementById('verify-btn')
+  btn.textContent = 'Checking…'
+  btn.disabled = true
+  setTimeout(() => {
+    document.getElementById('card-active').style.display = 'none'
+    document.getElementById('card-success').style.display = 'block'
+  }, 2000)
+})
+
+// ── Replay ────────────────────────────────────────────────────────────────
+document.getElementById('replay-btn').addEventListener('click', () => {
+  questKeypair = null
+  document.getElementById('display-pk').textContent = '—'
+  document.getElementById('display-sk').textContent = '—'
+  document.getElementById('fund-btn').textContent = '⚡ Fund'
+  document.getElementById('fund-btn').disabled = false
+  document.getElementById('fund-btn').classList.remove('funded')
+  document.getElementById('verify-btn').textContent = 'VERIFY'
+  document.getElementById('verify-btn').disabled = true
+  document.getElementById('card-success').style.display = 'none'
+  document.getElementById('card-initial').style.display = 'block'
+})
+
+// ── Code copy buttons ─────────────────────────────────────────────────────
+document.querySelectorAll('.copy-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const block = btn.parentElement
+    const text = block.innerText.replace('Copy', '').trim()
+    navigator.clipboard.writeText(text).then(() => {
+      btn.textContent = 'Copied!'
+      setTimeout(() => btn.textContent = 'Copy', 1500)
+    })
+  })
+})
 </script>
+
+<!-- embed.js runs after inline script sets data-code, so iframe is created with correct code -->
+<script src="embed.js"></script>
 
 </body>
 </html>
