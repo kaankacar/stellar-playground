@@ -25,7 +25,7 @@
       overflow: hidden;
     }
 
-    /* ── Header ──────────────────────────────────────────── */
+    /* ── Header (standalone mode only) ──────────────────── */
     header {
       display: flex;
       align-items: center;
@@ -78,6 +78,30 @@
     #share-btn:hover { color: #e2e8f0; border-color: #4a5568; }
     #share-btn.copied { color: #69db7c; border-color: #69db7c; }
 
+    /* ── Embed toolbar (embed mode only) ─────────────────── */
+    #embed-toolbar {
+      display: none;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 12px;
+      height: 36px;
+      background: #161b27;
+      border-bottom: 1px solid #2a3042;
+      flex-shrink: 0;
+    }
+
+    #open-link {
+      font-size: 11px;
+      color: #5b6a8a;
+      text-decoration: none;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      transition: color 0.15s;
+    }
+    #open-link:hover { color: #a0b0cc; }
+
+    /* ── Run button (shared) ──────────────────────────────── */
     #run-btn {
       display: flex;
       align-items: center;
@@ -109,17 +133,18 @@
 
     #run-btn.running .spinner { display: block; }
     #run-btn.running .run-icon { display: none; }
+    #run-btn.running .run-label { display: inline; }
+    .run-label { display: none; }
 
     @keyframes spin { to { transform: rotate(360deg); } }
 
-    /* ── Main layout ─────────────────────────────────────── */
+    /* ── Main layout — standalone ─────────────────────────── */
     main {
       display: flex;
       flex: 1;
       overflow: hidden;
     }
 
-    /* ── Editor pane ─────────────────────────────────────── */
     #editor-pane {
       flex: 1;
       display: flex;
@@ -139,12 +164,8 @@
       flex-shrink: 0;
     }
 
-    #editor-container {
-      flex: 1;
-      overflow: hidden;
-    }
+    #editor-container { flex: 1; overflow: hidden; }
 
-    /* ── Output pane ─────────────────────────────────────── */
     #output-pane {
       width: 400px;
       min-width: 280px;
@@ -174,7 +195,6 @@
       cursor: pointer;
       transition: color 0.15s, border-color 0.15s;
     }
-
     #clear-btn:hover { color: #e2e8f0; border-color: #4a5568; }
 
     #output {
@@ -192,30 +212,56 @@
       font-style: italic;
     }
 
-    .log-line { color: #c8d3f5; word-break: break-all; }
-    .log-error { color: #ff6b6b; }
-    .log-warn { color: #ffd43b; }
+    .log-line    { color: #c8d3f5; word-break: break-all; }
+    .log-error   { color: #ff6b6b; }
+    .log-warn    { color: #ffd43b; }
     .log-success { color: #69db7c; }
-    .log-info { color: #74c0fc; }
-    .log-divider {
-      border: none;
-      border-top: 1px solid #2a3042;
-      margin: 8px 0;
-    }
-    .log-duration {
-      color: #3a4560;
-      font-size: 11px;
-      margin-top: 4px;
-    }
+    .log-info    { color: #74c0fc; }
+    .log-divider { border: none; border-top: 1px solid #2a3042; margin: 8px 0; }
+    .log-duration { color: #3a4560; font-size: 11px; margin-top: 4px; }
 
-    /* ── Scrollbar ───────────────────────────────────────── */
     #output::-webkit-scrollbar { width: 6px; }
     #output::-webkit-scrollbar-track { background: transparent; }
     #output::-webkit-scrollbar-thumb { background: #2a3042; border-radius: 3px; }
+
+    /* ── Embed mode overrides ─────────────────────────────── */
+    body.embed {
+      height: auto;
+      min-height: 0;
+      overflow: visible;
+    }
+
+    body.embed header       { display: none; }
+    body.embed #embed-toolbar { display: flex; }
+
+    body.embed main {
+      flex-direction: column;
+      height: auto;
+      overflow: visible;
+    }
+
+    body.embed #editor-pane {
+      border-right: none;
+      border-bottom: 1px solid #2a3042;
+      height: 280px;
+      flex: none;
+    }
+
+    body.embed #editor-container { height: 100%; }
+
+    body.embed #output-pane {
+      width: 100%;
+      min-width: 0;
+      height: 200px;
+      flex: none;
+    }
+
+    body.embed #output { height: 100%; }
   </style>
 </head>
 <body>
 
+<!-- Standalone header -->
 <header>
   <div class="logo">
     <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
@@ -235,6 +281,16 @@
   </div>
 </header>
 
+<!-- Embed toolbar (shown instead of header in embed mode) -->
+<div id="embed-toolbar">
+  <button id="run-btn-embed">
+    <span class="run-icon">▶ Run</span>
+    <span class="spinner"></span>
+    <span class="run-label">Running…</span>
+  </button>
+  <a id="open-link" href="#" target="_blank" rel="noopener">↗ Open in Playground</a>
+</div>
+
 <main>
   <div id="editor-pane">
     <div class="pane-label">JavaScript</div>
@@ -243,7 +299,7 @@
 
   <div id="output-pane">
     <div class="output-header">
-      <span class="pane-label" style="padding:0; border:none; background:none;">Console</span>
+      <span class="pane-label" style="padding:0;border:none;background:none;">Console</span>
       <button id="clear-btn">Clear</button>
     </div>
     <div id="output"></div>
@@ -251,7 +307,14 @@
 </main>
 
 <script>
-// ── Default starter code ────────────────────────────────────
+// ── Detect mode ───────────────────────────────────────────────
+const params   = new URLSearchParams(window.location.search)
+const EMBED    = params.get('embed') === '1'
+const BASE_URL = window.location.origin + window.location.pathname
+
+if (EMBED) document.body.classList.add('embed')
+
+// ── Default starter code ──────────────────────────────────────
 const STARTER_CODE = `// Stellar Playground — powered by @stellar/stellar-sdk
 // Runs on Testnet. All operations are free and reversible.
 
@@ -278,9 +341,22 @@ account.balances.forEach(b => {
   const asset = b.asset_type === 'native' ? 'XLM' : b.asset_code
   console.log(\`Balance     : \${b.balance} \${asset}\`)
 })
-`;
+`
 
-// ── Fake require() — returns stellar-sdk for any import of it ─
+// ── URL helpers ───────────────────────────────────────────────
+function getInitialCode() {
+  try {
+    const encoded = params.get('code')
+    if (encoded) return atob(encoded)
+  } catch {}
+  return STARTER_CODE
+}
+
+function makeStandaloneUrl(code) {
+  return `${BASE_URL}?code=${btoa(code)}`
+}
+
+// ── Fake require() ────────────────────────────────────────────
 function fakeRequire(pkg) {
   const stellar = ['stellar-sdk', '@stellar/stellar-sdk']
   if (stellar.includes(pkg)) {
@@ -290,18 +366,14 @@ function fakeRequire(pkg) {
   throw new Error(`Cannot require '${pkg}' — only @stellar/stellar-sdk is available`)
 }
 
-// ── Show SDK version once loaded ──────────────────────────────
-function updateSdkBadge() {
+// ── SDK version badge ─────────────────────────────────────────
+window.addEventListener('load', () => {
   const el = document.getElementById('sdk-version')
-  if (window.StellarSdk && window.StellarSdk.version) {
-    el.textContent = `@stellar/stellar-sdk v${window.StellarSdk.version}`
-  } else if (window.StellarSdk) {
-    el.textContent = '@stellar/stellar-sdk loaded'
-  } else {
-    el.textContent = 'SDK unavailable'
-  }
-}
-window.addEventListener('load', updateSdkBadge)
+  if (!el) return
+  if (window.StellarSdk?.version) el.textContent = `@stellar/stellar-sdk v${window.StellarSdk.version}`
+  else if (window.StellarSdk)     el.textContent = '@stellar/stellar-sdk loaded'
+  else                             el.textContent = 'SDK unavailable'
+})
 
 // ── Console capture ───────────────────────────────────────────
 function makeConsole(outputEl) {
@@ -309,67 +381,75 @@ function makeConsole(outputEl) {
     const div = document.createElement('div')
     div.className = cls
     div.textContent = args.map(a => {
-      if (typeof a === 'object') {
-        try { return JSON.stringify(a, null, 2) } catch { return String(a) }
-      }
+      if (typeof a === 'object') { try { return JSON.stringify(a, null, 2) } catch {} }
       return String(a)
     }).join(' ')
     outputEl.appendChild(div)
     outputEl.scrollTop = outputEl.scrollHeight
+    sendHeight()
   }
   return {
-    log:   (...a) => line('log-line', ...a),
+    log:   (...a) => line('log-line',  ...a),
     error: (...a) => line('log-error', '✗', ...a),
     warn:  (...a) => line('log-warn',  '⚠', ...a),
     info:  (...a) => line('log-info',  'ℹ', ...a),
   }
 }
 
+// ── postMessage height (for parent to resize iframe) ──────────
+function sendHeight() {
+  if (!EMBED) return
+  const h = document.documentElement.scrollHeight
+  window.parent.postMessage({ type: 'stellar-playground', height: h }, '*')
+}
+
 // ── Run code ──────────────────────────────────────────────────
 async function runCode(code, outputEl) {
   const AsyncFunction = Object.getPrototypeOf(async function(){}).constructor
-  const customConsole = makeConsole(outputEl)
-
-  // Wrap so top-level await works and require is available
-  const wrapped = `
-    const require = __require__;
-    ${code}
-  `
-
+  const wrapped = `const require = __require__;\n${code}`
   try {
-    const fn = new AsyncFunction('__require__', 'console', wrapped)
-    await fn(fakeRequire, customConsole)
+    await new AsyncFunction('__require__', 'console', wrapped)(fakeRequire, makeConsole(outputEl))
   } catch (err) {
     const div = document.createElement('div')
     div.className = 'log-error'
     div.textContent = `✗ ${err.name}: ${err.message}`
     outputEl.appendChild(div)
+    sendHeight()
   }
 }
 
-// ── URL param: ?code=<base64> ─────────────────────────────────
-function getInitialCode() {
-  try {
-    const params = new URLSearchParams(window.location.search)
-    const encoded = params.get('code')
-    if (encoded) return atob(encoded)
-  } catch {}
-  return STARTER_CODE
-}
+// ── Wire up run button helper ─────────────────────────────────
+function setupRunButton(btn, getCode, outputEl) {
+  btn.addEventListener('click', async () => {
+    btn.disabled = true
+    btn.classList.add('running')
 
-// Helper to generate a shareable URL for any code string
-function makeShareUrl(code) {
-  const base = window.location.origin + window.location.pathname
-  return `${base}?code=${btoa(code)}`
+    if (outputEl.children.length > 0) {
+      const hr = document.createElement('hr')
+      hr.className = 'log-divider'
+      outputEl.appendChild(hr)
+    }
+
+    const start = Date.now()
+    await runCode(getCode(), outputEl)
+
+    const dur = document.createElement('div')
+    dur.className = 'log-duration'
+    dur.textContent = `finished in ${Date.now() - start}ms`
+    outputEl.appendChild(dur)
+    outputEl.scrollTop = outputEl.scrollHeight
+    sendHeight()
+
+    btn.disabled = false
+    btn.classList.remove('running')
+  })
 }
 
 // ── Wire up Monaco ────────────────────────────────────────────
 require(['vs/editor/editor.main'], function () {
   const outputEl = document.getElementById('output')
-  const runBtn   = document.getElementById('run-btn')
   const clearBtn = document.getElementById('clear-btn')
 
-  // Create editor
   const editor = monaco.editor.create(document.getElementById('editor-container'), {
     value: getInitialCode(),
     language: 'javascript',
@@ -384,48 +464,23 @@ require(['vs/editor/editor.main'], function () {
     tabSize: 2,
   })
 
-  // Resize editor when window changes
   window.addEventListener('resize', () => editor.layout())
 
-  // Run button
-  runBtn.addEventListener('click', async () => {
-    runBtn.disabled = true
-    runBtn.classList.add('running')
-
-    // Divider if there's prior output
-    if (outputEl.children.length > 0) {
-      const hr = document.createElement('hr')
-      hr.className = 'log-divider'
-      outputEl.appendChild(hr)
-    }
-
-    const start = Date.now()
-    await runCode(editor.getValue(), outputEl)
-    const elapsed = Date.now() - start
-
-    const dur = document.createElement('div')
-    dur.className = 'log-duration'
-    dur.textContent = `finished in ${elapsed}ms`
-    outputEl.appendChild(dur)
-    outputEl.scrollTop = outputEl.scrollHeight
-
-    runBtn.disabled = false
-    runBtn.classList.remove('running')
-  })
-
-  // Ctrl/Cmd + Enter to run
+  // Standalone run button
+  const runBtn = document.getElementById('run-btn')
+  setupRunButton(runBtn, () => editor.getValue(), outputEl)
   editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.Enter, () => {
     if (!runBtn.disabled) runBtn.click()
   })
 
-  // Clear button
-  clearBtn.addEventListener('click', () => { outputEl.innerHTML = '' })
+  // Embed run button
+  const runBtnEmbed = document.getElementById('run-btn-embed')
+  setupRunButton(runBtnEmbed, () => editor.getValue(), outputEl)
 
-  // Share button — copies a URL with the current code embedded as base64
+  // Share button (standalone only)
   const shareBtn = document.getElementById('share-btn')
   shareBtn.addEventListener('click', () => {
-    const url = makeShareUrl(editor.getValue())
-    navigator.clipboard.writeText(url).then(() => {
+    navigator.clipboard.writeText(makeStandaloneUrl(editor.getValue())).then(() => {
       shareBtn.textContent = '✓ Copied!'
       shareBtn.classList.add('copied')
       setTimeout(() => {
@@ -434,6 +489,22 @@ require(['vs/editor/editor.main'], function () {
       }, 2000)
     })
   })
+
+  // Open link (embed only) — opens standalone playground in new tab with current code
+  const openLink = document.getElementById('open-link')
+  openLink.href = makeStandaloneUrl(editor.getValue())
+  editor.onDidChangeModelContent(() => {
+    openLink.href = makeStandaloneUrl(editor.getValue())
+  })
+
+  // Clear button
+  clearBtn.addEventListener('click', () => {
+    outputEl.innerHTML = ''
+    sendHeight()
+  })
+
+  // Initial height signal to parent
+  sendHeight()
 })
 </script>
 
