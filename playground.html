@@ -273,7 +273,7 @@
   <div class="header-right">
     <span id="sdk-version">loading sdk…</span>
     <button id="share-btn">⎘ Share</button>
-    <button id="run-btn">
+    <button id="run-btn" disabled>
       <span class="run-icon">▶ Run</span>
       <span class="spinner"></span>
       <span class="run-label">Running…</span>
@@ -283,7 +283,7 @@
 
 <!-- Embed toolbar (shown instead of header in embed mode) -->
 <div id="embed-toolbar">
-  <button id="run-btn-embed">
+  <button id="run-btn-embed" disabled>
     <span class="run-icon">▶ Run</span>
     <span class="spinner"></span>
     <span class="run-label">Running…</span>
@@ -366,13 +366,22 @@ function fakeRequire(pkg) {
   throw new Error(`Cannot require '${pkg}' — only @stellar/stellar-sdk is available`)
 }
 
-// ── SDK version badge ─────────────────────────────────────────
-window.addEventListener('load', () => {
+// ── Wait for SDK to load, then enable run buttons ─────────────
+function waitForSdk(cb) {
+  if (window.StellarSdk) return cb()
+  setTimeout(() => waitForSdk(cb), 150)
+}
+
+waitForSdk(() => {
+  // Enable both run buttons now that SDK is ready
+  document.querySelectorAll('#run-btn, #run-btn-embed').forEach(b => b.disabled = false)
+  // Update badge
   const el = document.getElementById('sdk-version')
-  if (!el) return
-  if (window.StellarSdk?.version) el.textContent = `@stellar/stellar-sdk v${window.StellarSdk.version}`
-  else if (window.StellarSdk)     el.textContent = '@stellar/stellar-sdk loaded'
-  else                             el.textContent = 'SDK unavailable'
+  if (el) {
+    el.textContent = window.StellarSdk.version
+      ? `@stellar/stellar-sdk v${window.StellarSdk.version}`
+      : '@stellar/stellar-sdk loaded'
+  }
 })
 
 // ── Console capture ───────────────────────────────────────────
