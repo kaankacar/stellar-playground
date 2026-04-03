@@ -60,6 +60,24 @@
       font-family: 'Menlo', 'Monaco', monospace;
     }
 
+    #share-btn {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      background: none;
+      color: #8899bb;
+      border: 1px solid #2a3042;
+      border-radius: 6px;
+      padding: 7px 14px;
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: color 0.15s, border-color 0.15s;
+    }
+
+    #share-btn:hover { color: #e2e8f0; border-color: #4a5568; }
+    #share-btn.copied { color: #69db7c; border-color: #69db7c; }
+
     #run-btn {
       display: flex;
       align-items: center;
@@ -208,6 +226,7 @@
   </div>
   <div class="header-right">
     <span id="sdk-version">loading sdk…</span>
+    <button id="share-btn">⎘ Share</button>
     <button id="run-btn">
       <span class="run-icon">▶ Run</span>
       <span class="spinner"></span>
@@ -328,6 +347,22 @@ async function runCode(code, outputEl) {
   }
 }
 
+// ── URL param: ?code=<base64> ─────────────────────────────────
+function getInitialCode() {
+  try {
+    const params = new URLSearchParams(window.location.search)
+    const encoded = params.get('code')
+    if (encoded) return atob(encoded)
+  } catch {}
+  return STARTER_CODE
+}
+
+// Helper to generate a shareable URL for any code string
+function makeShareUrl(code) {
+  const base = window.location.origin + window.location.pathname
+  return `${base}?code=${btoa(code)}`
+}
+
 // ── Wire up Monaco ────────────────────────────────────────────
 require(['vs/editor/editor.main'], function () {
   const outputEl = document.getElementById('output')
@@ -336,7 +371,7 @@ require(['vs/editor/editor.main'], function () {
 
   // Create editor
   const editor = monaco.editor.create(document.getElementById('editor-container'), {
-    value: STARTER_CODE,
+    value: getInitialCode(),
     language: 'javascript',
     theme: 'vs-dark',
     fontSize: 13,
@@ -385,6 +420,20 @@ require(['vs/editor/editor.main'], function () {
 
   // Clear button
   clearBtn.addEventListener('click', () => { outputEl.innerHTML = '' })
+
+  // Share button — copies a URL with the current code embedded as base64
+  const shareBtn = document.getElementById('share-btn')
+  shareBtn.addEventListener('click', () => {
+    const url = makeShareUrl(editor.getValue())
+    navigator.clipboard.writeText(url).then(() => {
+      shareBtn.textContent = '✓ Copied!'
+      shareBtn.classList.add('copied')
+      setTimeout(() => {
+        shareBtn.textContent = '⎘ Share'
+        shareBtn.classList.remove('copied')
+      }, 2000)
+    })
+  })
 })
 </script>
 
