@@ -9,8 +9,28 @@
   <script>var require = { paths: { vs: 'https://cdn.jsdelivr.net/npm/monaco-editor@0.45.0/min/vs' } };</script>
   <script src="https://cdn.jsdelivr.net/npm/monaco-editor@0.45.0/min/vs/loader.js"></script>
 
-  <!-- Stellar SDK (UMD browser build → window.StellarSdk) -->
-  <script src="https://cdn.jsdelivr.net/npm/@stellar/stellar-sdk@15.0.1/dist/stellar-sdk.js"></script>
+  <!-- Stellar SDK loaded dynamically so we can handle load/error events -->
+  <script>
+    (function () {
+      var PRIMARY = 'https://cdn.jsdelivr.net/npm/@stellar/stellar-sdk@15.0.1/dist/stellar-sdk.min.js'
+      var FALLBACK = 'https://unpkg.com/@stellar/stellar-sdk@15.0.1/dist/stellar-sdk.min.js'
+
+      function loadSdk(url, onError) {
+        var s = document.createElement('script')
+        s.src = url
+        s.onerror = onError
+        document.head.appendChild(s)
+      }
+
+      loadSdk(PRIMARY, function () {
+        // Primary CDN failed — try unpkg as fallback
+        loadSdk(FALLBACK, function () {
+          // Both failed — mark for the waitForSdk poller
+          window.__sdkLoadFailed = true
+        })
+      })
+    })()
+  </script>
 
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -367,7 +387,6 @@ function fakeRequire(pkg) {
 }
 
 // ── Wait for SDK to load, then enable run buttons ─────────────
-let sdkCheckAttempts = 0
 function waitForSdk() {
   if (window.StellarSdk) {
     // SDK ready — enable buttons and update label/badge
@@ -381,16 +400,17 @@ function waitForSdk() {
       : '@stellar/stellar-sdk loaded'
     return
   }
-  // Timeout after ~15 seconds
-  if (++sdkCheckAttempts > 100) {
+  // Both CDNs failed to load the script
+  if (window.__sdkLoadFailed) {
     document.querySelectorAll('#run-btn, #run-btn-embed').forEach(b => {
-      b.querySelector('.run-icon').textContent = '⚠ SDK failed to load'
+      b.querySelector('.run-icon').textContent = '⚠ SDK failed — check connection'
     })
     const el = document.getElementById('sdk-version')
-    if (el) el.textContent = 'SDK failed — check connection'
+    if (el) el.textContent = 'SDK unavailable'
     return
   }
-  setTimeout(waitForSdk, 150)
+  // Still loading — keep polling
+  setTimeout(waitForSdk, 200)
 }
 waitForSdk()
 
