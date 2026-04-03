@@ -12,7 +12,7 @@
  *   data-height="500"   — initial iframe height in px before content loads (default: 500)
  */
 (function () {
-  const PLAYGROUND = 'https://kaankacar.github.io/stellar-playground/index.html'
+  const PLAYGROUND = 'https://kaankacar.github.io/stellar-playground/playground.html'
 
   function buildIframe(code, initialHeight) {
     const src = `${PLAYGROUND}?embed=1&code=${encodeURIComponent(code)}`
