@@ -10,7 +10,7 @@
   <script src="https://cdn.jsdelivr.net/npm/monaco-editor@0.45.0/min/vs/loader.js"></script>
 
   <!-- Stellar SDK (UMD browser build → window.StellarSdk) -->
-  <script src="https://cdn.jsdelivr.net/npm/@stellar/stellar-sdk@latest/dist/stellar-sdk.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@stellar/stellar-sdk@15.0.1/dist/stellar-sdk.js"></script>
 
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -274,7 +274,7 @@
     <span id="sdk-version">loading sdk…</span>
     <button id="share-btn">⎘ Share</button>
     <button id="run-btn" disabled>
-      <span class="run-icon">▶ Run</span>
+      <span class="run-icon">Loading SDK…</span>
       <span class="spinner"></span>
       <span class="run-label">Running…</span>
     </button>
@@ -284,7 +284,7 @@
 <!-- Embed toolbar (shown instead of header in embed mode) -->
 <div id="embed-toolbar">
   <button id="run-btn-embed" disabled>
-    <span class="run-icon">▶ Run</span>
+    <span class="run-icon">Loading SDK…</span>
     <span class="spinner"></span>
     <span class="run-label">Running…</span>
   </button>
@@ -367,22 +367,32 @@ function fakeRequire(pkg) {
 }
 
 // ── Wait for SDK to load, then enable run buttons ─────────────
-function waitForSdk(cb) {
-  if (window.StellarSdk) return cb()
-  setTimeout(() => waitForSdk(cb), 150)
-}
-
-waitForSdk(() => {
-  // Enable both run buttons now that SDK is ready
-  document.querySelectorAll('#run-btn, #run-btn-embed').forEach(b => b.disabled = false)
-  // Update badge
-  const el = document.getElementById('sdk-version')
-  if (el) {
-    el.textContent = window.StellarSdk.version
+let sdkCheckAttempts = 0
+function waitForSdk() {
+  if (window.StellarSdk) {
+    // SDK ready — enable buttons and update label/badge
+    document.querySelectorAll('#run-btn, #run-btn-embed').forEach(b => {
+      b.disabled = false
+      b.querySelector('.run-icon').textContent = '▶ Run'
+    })
+    const el = document.getElementById('sdk-version')
+    if (el) el.textContent = window.StellarSdk.version
       ? `@stellar/stellar-sdk v${window.StellarSdk.version}`
       : '@stellar/stellar-sdk loaded'
+    return
   }
-})
+  // Timeout after ~15 seconds
+  if (++sdkCheckAttempts > 100) {
+    document.querySelectorAll('#run-btn, #run-btn-embed').forEach(b => {
+      b.querySelector('.run-icon').textContent = '⚠ SDK failed to load'
+    })
+    const el = document.getElementById('sdk-version')
+    if (el) el.textContent = 'SDK failed — check connection'
+    return
+  }
+  setTimeout(waitForSdk, 150)
+}
+waitForSdk()
 
 // ── Console capture ───────────────────────────────────────────
 function makeConsole(outputEl) {
