@@ -355,8 +355,11 @@ console.log('Secret Key :', keypair.secret())
 const fundResp = await fetch(
   \`https://friendbot.stellar.org?addr=\${encodeURIComponent(keypair.publicKey())}\`
 )
-const fundResult = await fundResp.json()
-console.log('Funded      :', fundResult.successful !== false ? '✓ yes' : '✗ failed')
+if (!fundResp.ok) {
+  const body = await fundResp.text()
+  throw new Error(\`Friendbot failed (\${fundResp.status}): \${body}\`)
+}
+console.log('Funded      : ✓')
 
 // 3. Load account from Horizon
 const server = new Horizon.Server('https://horizon-testnet.stellar.org')
