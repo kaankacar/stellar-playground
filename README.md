@@ -183,12 +183,27 @@ window.addEventListener('message', (event) => {
 
 ## How it works
 
-- `@stellar/stellar-sdk` is loaded from CDN into the iframe
-- The Run button is disabled until the SDK finishes loading
-- User code is executed using `AsyncFunction` — so top-level `await` works
-- `require('@stellar/stellar-sdk')` and `require('stellar-sdk')` both work (via a fake `require`)
-- `console.log/error/warn/info` are captured and shown in the output panel
-- No server required — everything runs in the browser
+### SDK loading
+
+`@stellar/stellar-sdk` (~1 MB minified) is fetched directly from CDN into the browser — no server, no npm install. The loading sequence:
+
+1. A `<script>` tag is injected dynamically pointing to jsDelivr:
+   ```
+   https://cdn.jsdelivr.net/npm/@stellar/stellar-sdk@15.0.1/dist/stellar-sdk.min.js
+   ```
+2. If jsDelivr fails (network error, CDN outage), an `onerror` handler retries with unpkg:
+   ```
+   https://unpkg.com/@stellar/stellar-sdk@15.0.1/dist/stellar-sdk.min.js
+   ```
+3. The SDK's UMD bundle normally sets `window.StellarSdk` — but Monaco Editor installs an AMD `define()` function first, and the UMD bundle detects it and uses AMD mode instead, which never sets the global. To prevent this, `window.define` is temporarily hidden before the SDK script is injected, then restored after it loads.
+4. A poller checks every 200 ms for `window.StellarSdk`. Once found, the Run button is enabled. If both CDNs fire `onerror`, the button shows a "check connection" warning instead.
+
+### Code execution
+
+- User code runs inside an `AsyncFunction` — top-level `await` works
+- `require('@stellar/stellar-sdk')` and `require('stellar-sdk')` both resolve to `window.StellarSdk` via a fake `require()`. Any other package throws.
+- `console.log/error/warn/info` are intercepted and shown in the output panel
+- All Horizon calls go directly to `horizon-testnet.stellar.org` (public REST API, CORS-enabled) — no proxy needed
 
 ---
 
